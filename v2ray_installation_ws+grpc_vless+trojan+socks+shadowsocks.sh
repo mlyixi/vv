@@ -61,9 +61,10 @@ trojan_grpc_path="$(pwgen -1scn 12)$(pwgen -1scny -r "\!@#$%^&*()-+={}[]|:\";',/
 socks_grpc_path="$(pwgen -1scn 12)$(pwgen -1scny -r "\!@#$%^&*()-+={}[]|:\";',/?><\`~" 36)"
 shadowsocks_grpc_path="$(pwgen -1scn 12)$(pwgen -1scny -r "\!@#$%^&*()-+={}[]|:\";',/?><\`~" 36)"
 
-# 7.创建需要用的domainSock目录,并授权nginx用户权限
+# 7.创建需要用的domainSock目录,	授权nginx用户权限，并添加开机自动创建
 domainSock_dir="/run/v2ray";! [ -d $domainSock_dir ] && mkdir -pv $domainSock_dir
 chown www-data.www-data $domainSock_dir
+echo 'd /var/run/v2ray 0755 www-data www-data' > /usr/lib/tmpfiles.d/custom.conf
 
 # 8.定义需要用到的domainSock文件名
 vless_ws_domainSock="${domainSock_dir}/vless_ws.sock"
@@ -76,10 +77,8 @@ ssl_dir="$(mkdir -pv "/etc/nginx/ssl/`date +"%F-%H-%M-%S"`" |awk -F"'" END'{prin
 
 # 使用v2ray官方命令安装v2ray并修改用户为www-data和重新加载服务文件
 # 1.官方命令安装v2ray
-curl -O https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh
-curl -O https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-dat-release.sh
-bash install-release.sh
-bash install-dat-release.sh
+bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --version 5.1.0
+systemctl enable v2ray
 # 2.修改v2ray日志目录权限为www-data
 chown -R www-data.www-data /var/log/v2ray
 # 3.修改v2ray默认用户为www-data
@@ -217,6 +216,9 @@ server {
 
 }
 " > /etc/nginx/conf.d/v2ray.conf
+
+# 创建v2ray配置文件目录（01/16/2023最新版默认没有创建该目录）
+mkdir -pv /usr/local/etc/v2ray
 
 # 配置v2ray，执行如下命令即可添加v2ray配置文件
 echo '
@@ -425,19 +427,6 @@ echo '
             "type": "field"
         }
       ]
-  },  
-  "routing": {
-    "strategy": "rules",
-    "settings": {
-      "decryption":"none",
-      "rules": [
-        {
-          "type": "field",
-          "ip": [ "geoip:private" ],
-          "outboundTag": "blocked"
-        }
-      ]
-    }
   }
 }
 ' > /usr/local/etc/v2ray/config.json

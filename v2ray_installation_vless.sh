@@ -41,10 +41,7 @@ ssl_dir="$(mkdir -pv "/usr/local/etc/v2ray/ssl/`date +"%F-%H-%M-%S"`" |awk -F"'"
 
 
 # 使用v2ray官方命令安装v2ray并设置开机启动
-curl -O https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh
-curl -O https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-dat-release.sh
-bash install-release.sh
-bash install-dat-release.sh
+bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --version 5.1.0
 systemctl enable v2ray
 
 # 修正官方5.1+版本安装脚本启动命令错误
@@ -107,6 +104,9 @@ server {
 }
 " > /etc/nginx/conf.d/v2ray.conf
 
+# 创建v2ray配置文件目录（01/16/2023最新版默认没有创建该目录）
+mkdir -pv /usr/local/etc/v2ray
+
 # 配置v2ray，执行如下命令即可添加v2ray配置文件
 echo '
 {
@@ -156,8 +156,13 @@ echo '
       "decryption":"none",
       "rules": [
         {
+          "domain": [ "geosite:cn" ],
+          "outboundTag": "blocked",
+          "type": "field"
+        },      
+        {
           "type": "field",
-          "ip": [ "geoip:private" ],
+          "ip": [ "geoip:cn" ],
           "outboundTag": "blocked"
         }
       ]
